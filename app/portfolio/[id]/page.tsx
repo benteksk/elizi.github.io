@@ -3,15 +3,25 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 
+type Portfolio = {
+  id: number;
+  title: string;
+  description: string;
+  price: number | string;
+  address: string;
+  mapUrl?: string;
+  images: string[];
+};
+
 export default function PortfolioDetail() {
   const { id } = useParams();
-  const [portfolio, setPortfolio] = useState<any>(null);
+  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/portfolios`).then(r => r.json()).then(data => {
-      const p = data.find((x: any) => String(x.id) === String(id));
-      setPortfolio(p);
+    fetch(`/api/portfolios`).then(r => r.json()).then((data: Portfolio[]) => {
+      const p = data.find((x) => String(x.id) === String(id));
+      setPortfolio(p || null);
       setLoading(false);
     });
   }, [id]);
@@ -26,13 +36,13 @@ export default function PortfolioDetail() {
         {/* Görseller */}
         <div className="flex-1 flex flex-col gap-2">
           {portfolio.images && portfolio.images.length > 0 ? (
-            <img src={portfolio.images[0]} alt={portfolio.title} className="rounded-xl w-full h-64 object-cover" />
+            <Image src={portfolio.images[0]} alt={portfolio.title} width={600} height={300} className="rounded-xl w-full h-64 object-cover" unoptimized />
           ) : (
             <div className="bg-gray-100 rounded-xl w-full h-64 flex items-center justify-center text-gray-400">Görsel yok</div>
           )}
           <div className="flex gap-2 mt-2">
-            {portfolio.images && portfolio.images.slice(1).map((img: string, i: number) => (
-              <img key={i} src={img} alt="Ek görsel" className="rounded w-20 h-16 object-cover border" />
+            {portfolio.images && portfolio.images.slice(1).map((img, i) => (
+              <Image key={i} src={img} alt="Ek görsel" width={80} height={64} className="rounded w-20 h-16 object-cover border" unoptimized />
             ))}
           </div>
         </div>

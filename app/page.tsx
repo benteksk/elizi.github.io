@@ -4,11 +4,28 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-function PortfolioCard({ p }: { p: any }) {
+type Portfolio = {
+  id: number;
+  title: string;
+  description: string;
+  price: number | string;
+  address: string;
+  mapUrl?: string;
+  images: string[];
+};
+
+type Review = {
+  id: number;
+  name: string;
+  comment: string;
+  approved: boolean;
+};
+
+function PortfolioCard({ p }: { p: Portfolio }) {
   return (
     <Link href={`/portfolio/${p.id}`} className="bg-[#f6fdff] rounded-xl shadow p-4 flex flex-col items-center hover:scale-[1.02] transition">
       {p.images && p.images[0] && (
-        <img src={p.images[0]} alt={p.title} className="rounded-lg mb-2 w-full h-40 object-cover" />
+        <Image src={p.images[0]} alt={p.title} width={320} height={160} className="rounded-lg mb-2 w-full h-40 object-cover" unoptimized />
       )}
       <h3 className="text-lg font-semibold text-[#009cb1]">{p.title}</h3>
       <p className="text-gray-700 mb-2">{p.address}</p>
@@ -19,8 +36,8 @@ function PortfolioCard({ p }: { p: any }) {
 }
 
 export default function Home() {
-  const [portfolios, setPortfolios] = useState<any[]>([]);
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewForm, setReviewForm] = useState({ name: "", comment: "" });
   const [reviewMsg, setReviewMsg] = useState("");
 
@@ -29,10 +46,10 @@ export default function Home() {
     fetch("/api/reviews").then(r => r.json()).then(setReviews);
   }, []);
 
-  const handleReviewInput = (e: any) => {
+  const handleReviewInput = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setReviewForm(f => ({ ...f, [e.target.name]: e.target.value }));
   };
-  const handleReviewSubmit = async (e: any) => {
+  const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setReviewMsg("");
     const res = await fetch("/api/reviews", {

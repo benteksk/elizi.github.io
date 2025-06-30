@@ -1,6 +1,24 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+
+type Portfolio = {
+  id: number;
+  title: string;
+  description: string;
+  price: number | string;
+  address: string;
+  mapUrl?: string;
+  images: string[];
+};
+
+type Review = {
+  id: number;
+  name: string;
+  comment: string;
+  approved: boolean;
+};
 
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
@@ -41,35 +59,34 @@ export default function AdminPanel() {
 }
 
 function PortfolioManager() {
-  const [portfolios, setPortfolios] = useState<any[]>([]);
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [form, setForm] = useState({ title: "", description: "", price: "", address: "", mapUrl: "", images: [] as File[] });
+  const [form, setForm] = useState<{ title: string; description: string; price: string; address: string; mapUrl: string; images: File[] }>({ title: "", description: "", price: "", address: "", mapUrl: "", images: [] });
   const [success, setSuccess] = useState("");
 
   const fetchPortfolios = async () => {
     setLoading(true);
     const res = await fetch("/api/portfolios");
-    const data = await res.json();
+    const data: Portfolio[] = await res.json();
     setPortfolios(data);
     setLoading(false);
   };
 
   useEffect(() => { fetchPortfolios(); }, []);
 
-  const handleInput = (e: any) => {
-    const { name, value, files } = e.target;
-    if (name === "images") setForm(f => ({ ...f, images: files }));
+  const handleInput = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, files } = e.target as HTMLInputElement;
+    if (name === "images" && files) setForm(f => ({ ...f, images: Array.from(files) }));
     else setForm(f => ({ ...f, [name]: value }));
   };
 
-  const handleAdd = async (e: any) => {
+  const handleAdd = async (e: FormEvent) => {
     e.preventDefault();
-    setError(""); setSuccess("");
+    setSuccess("");
     const token = localStorage.getItem("elizi_token");
     const formData = new FormData();
     Object.entries(form).forEach(([k, v]) => {
-      if (k === "images") Array.from(v as File[]).forEach(file => formData.append("images", file));
+      if (k === "images") (v as File[]).forEach(file => formData.append("images", file));
       else formData.append(k, v as string);
     });
     const res = await fetch("/api/portfolios", {
@@ -82,7 +99,7 @@ function PortfolioManager() {
       setForm({ title: "", description: "", price: "", address: "", mapUrl: "", images: [] });
       fetchPortfolios();
     } else {
-      setError("Ekleme başarısız");
+      setSuccess("Ekleme başarısız");
     }
   };
 
@@ -98,13 +115,12 @@ function PortfolioManager() {
         <input name="images" type="file" multiple accept="image/*" onChange={handleInput} className="md:col-span-2" />
         <button type="submit" className="bg-[#009cb1] text-white rounded py-2 font-semibold md:col-span-2">Ekle</button>
       </form>
-      {error && <div className="text-red-500 mb-2">{error}</div>}
-      {success && <div className="text-green-600 mb-2">{success}</div>}
+      {success && <div className={`mb-2 ${success.includes("başarısız") ? "text-red-500" : "text-green-600"}`}>{success}</div>}
       {loading ? <div>Yükleniyor...</div> : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {portfolios.map((p) => (
             <div key={p.id} className="bg-white rounded shadow p-4 flex flex-col gap-2">
-              {p.images && p.images[0] && <img src={p.images[0]} alt={p.title} className="rounded w-full h-40 object-cover" />}
+              {p.images && p.images[0] && <Image src={p.images[0]} alt={p.title} width={320} height={160} className="rounded w-full h-40 object-cover" unoptimized />}
               <div className="font-bold text-[#009cb1]">{p.title}</div>
               <div className="text-gray-700">{p.description}</div>
               <div className="text-sm text-gray-500">{p.address}</div>
@@ -119,15 +135,14 @@ function PortfolioManager() {
 }
 
 function ReviewManager() {
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const fetchReviews = async () => {
     setLoading(true);
     const token = localStorage.getItem("elizi_token");
     const res = await fetch("/api/reviews?all=1", { headers: { Authorization: `Bearer ${token}` } });
-    const data = await res.json();
+    const data: Review[] = await res.json();
     setReviews(data);
     setLoading(false);
   };
@@ -166,7 +181,6 @@ function ReviewManager() {
           ))}
         </div>
       )}
-      {error && <div className="text-red-500 mt-2">{error}</div>}
     </div>
   );
 } 
